@@ -2,6 +2,7 @@
 const $ = (id) => document.getElementById(id);
 let ME = null, PROFILE = null, POLL = null, LAST_SESSION = null, prefs = {};
 let MINIMIZED = false; // layar sesi diperkecil jadi bilah di bawah: sesi tetap berjalan, aplikasi bisa dipakai
+let QUALITY_LIVE = false; // sesi hidup dan kualitasnya bisa diganti (layar PC terbuka atau baru ditutup)
 
 async function api(name, ...args) {
   const r = await window.pywebview.api[name](...args);
@@ -159,6 +160,7 @@ async function boot() {
   IS_MOBILE = PLATFORM === "android" || PLATFORM === "ios";
   MOBILE_STREAM = IS_MOBILE && !!cfg.moonlight_installed;
   document.body.classList.toggle("is-mobile", IS_MOBILE);
+  if (IS_MOBILE) $("q-live-hint").textContent = "Sesi sedang berjalan. Perubahan di sini langsung dipakai saat layar PC dibuka lagi: tekan \"Buka sesi\" di atas, lalu \"Sambung lagi\". PC, file, dan kuotamu tidak terpengaruh.";
   $("mobile-stream-note").classList.toggle("hidden", !IS_MOBILE || MOBILE_STREAM);
   $("app-version").textContent = APP_VERSION;
   const upd = cfg.update_result;  // aplikasi baru saja dibuka lagi oleh installer pembaruan
@@ -539,7 +541,28 @@ function fpsHint() {
   $("q-fps-hint").classList.toggle("hidden", !show);
   if (low) $("q-fps-hint").textContent = `${mbps} Mbps terlalu kecil untuk ${$("q-res").value} ${fps} FPS: gambar akan pecah. Pilih 30 FPS dan resolusi ${mbps <= 2 ? "854x480" : "960x540"}.`;
   else if (show) $("q-fps-hint").textContent = `${fps} FPS dengan ${mbps} Mbps bisa terlihat buram; naikkan bitrate ke 30-40 Mbps.`;
+  syncBitratePick();
 }
+
+/* HP: bitrate dipilih dari daftar (#q-bitrate-pick), bukan slider. Slider berubah nilainya begitu tersentuh jari yang
+   sedang menggulir halaman: sesi #113 (23 Nov 2026) diminta 28 Mbps padahal pemain merasa memilih 1 Mbps. Slider tetap
+   menjadi sumber nilai (disembunyikan lewat CSS), daftar hanya menyetelnya; baris "Kualitas: ..." di dekat tombol Mulai
+   memperlihatkan nilai yang benar-benar akan dikirim. */
+const BITRATE_PICKS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50];
+const bitrateLabel = (m) => `${m} Mbps` + (m <= 2 ? " (internet sangat lambat)" : m <= 5 ? " (internet lambat / hemat data)" : "");
+$("q-bitrate-pick").innerHTML = BITRATE_PICKS.map((m) => `<option value="${m}">${bitrateLabel(m)}</option>`).join("");
+function syncBitratePick() {
+  const pick = $("q-bitrate-pick"), v = String(Number($("q-bitrate").value));
+  if (![...pick.options].some((o) => o.value === v)) pick.add(new Option(bitrateLabel(Number(v)), v));
+  pick.value = v;
+  const [, h] = $("q-res").value.split("x");
+  $("start-quality").textContent = `Kualitas: ${h}p · ${$("q-fps").value} FPS · ${v} Mbps`;
+}
+$("q-bitrate-pick").addEventListener("change", () => {
+  $("q-bitrate").value = $("q-bitrate-pick").value;
+  // Pendengar lama (label, petunjuk, simpan preferensi) tetap terpasang di slider.
+  ["input", "change"].forEach((t) => $("q-bitrate").dispatchEvent(new Event(t, { bubbles: true })));
+});
 ["q-fps", "q-bitrate", "q-res"].forEach((id) => $(id).addEventListener("input", fpsHint));
 
 // Preset "koneksi tidak stabil": jitter tinggi atau paket hilang (mis. Wi-Fi kafe) membuat video datang bergerombol dan
@@ -564,7 +587,7 @@ $("q-wifi-preset").onclick = () => {
   $("q-bitrate-val").textContent = WIFI_PRESET.mbps;
   fpsHint(); wifiHint(); savePrefs();
   // Sesi sedang berjalan: langsung terapkan (stream dibuka ulang sebentar); kalau belum, berlaku saat mulai sesi.
-  if (!$("q-apply").classList.contains("hidden")) $("q-apply").click();
+  if (QUALITY_LIVE) applyQuality();
   else toast("Pengaturan koneksi tidak stabil dipakai untuk sesi berikutnya.");
 };
 
@@ -572,7 +595,7 @@ $("q-wifi-preset").onclick = () => {
    tertinggi yang paket hilangnya <= 1%, lalu menawarkan memakainya. Server atau aplikasi lama tanpa fitur ini: disembunyikan. */
 let BURST_REC = null;
 $("burst-btn").onclick = async () => {
-  if (!$("q-apply").classList.contains("hidden")) { toast("Tes tidak bisa dijalankan saat sesi berjalan; akhiri sesi dulu."); return; }
+  if (QUALITY_LIVE) { toast("Tes tidak bisa dijalankan saat sesi berjalan; akhiri sesi dulu."); return; }
   const btn = $("burst-btn"), out = $("burst-out"), apply = $("burst-apply");
   btn.disabled = true; apply.classList.add("hidden");
   out.classList.remove("hidden"); out.textContent = "Mengetes... jangan pakai internet untuk hal lain dulu.";
@@ -810,11 +833,22 @@ async function pollSession() {
   // (layar tertutup, mengakhiri, selesai) layar sesi dikembalikan supaya tombol dan ringkasannya terlihat.
   const inStream = phase === "streaming" || (phase === "connecting" && live);
   $("s-minimize").classList.toggle("hidden", phase !== "streaming");
-  $("q-apply").classList.toggle("hidden", !(live && (inStream || phase === "stream_closed")));
-  $("q-live-hint").classList.toggle("hidden", !(live && (inStream || phase === "stream_closed")));
+  QUALITY_LIVE = !!(live && (inStream || phase === "stream_closed"));
+  // HP: tanpa tombol "Terapkan"; perubahan langsung dikirim (lihat autoApplyQuality) dan dipakai saat layar PC dibuka lagi.
+  $("q-apply").classList.toggle("hidden", !QUALITY_LIVE || IS_MOBILE);
+  $("q-live-hint").classList.toggle("hidden", !QUALITY_LIVE);
+  // Kualitas yang SEDANG dipakai sesi ini (dari server), supaya salah setel langsung terlihat.
+  const sq = live && s.quality && s.quality.bitrate_kbps ? s.quality : null;
+  $("s-quality").classList.toggle("hidden", !sq);
+  if (sq) $("s-quality").textContent = `Kualitas sesi ini: ${sq.resolution || "-"} · ${sq.fps || "-"} FPS · ${sq.bitrate_kbps / 1000} Mbps`;
+  // HP: layar PC menutupi aplikasi selama stream, jadi kualitas diganti setelah layar ditutup (X): "Ubah kualitas"
+  // memperkecil layar sesi ini jadi bilah, kartu Kualitas stream terbuka, lalu "Buka sesi" -> "Sambung lagi".
+  const closedOnPhone = IS_MOBILE && phase === "stream_closed";
+  $("s-quality-btn").classList.toggle("hidden", !closedOnPhone);
   if (MINIMIZED) {
-    if (!inStream) setMinimized(false);
-    else $("sb-text").textContent = phase === "connecting" ? "Menerapkan kualitas baru..."
+    if (!inStream && !closedOnPhone) setMinimized(false);
+    else $("sb-text").textContent = closedOnPhone ? `Layar PC tertutup · sesi berakhir ${fmtDur(st.reconnect_seconds_left || 0)} lagi`
+      : phase === "connecting" ? "Menerapkan kualitas baru..."
       : `Sesi berjalan · sisa ${fmtDur(s && s.seconds_left)}`;
   }
   $("s-end").classList.toggle("hidden", finished || phase === "ending");
@@ -834,15 +868,30 @@ $("s-reconnect").onclick = () => api("reconnect");
 $("s-minimize").onclick = () => setMinimized(true);
 $("sb-open").onclick = () => setMinimized(false);
 $("sb-end").onclick = async () => { setMinimized(false); await api("end_session").catch((e) => toast(e.message)); };
-$("q-apply").onclick = async () => {
+async function applyQuality() {
   const btn = $("q-apply");
   btn.disabled = true;
   try {
     savePrefs();
-    await api("apply_quality", quality());
-    toast("Kualitas diterapkan. Layar PC dibuka ulang sebentar...", 4500);
+    const q = await api("apply_quality", quality());
+    const mbps = ((q && q.bitrate_kbps) || quality().bitrate_kbps) / 1000;
+    toast(IS_MOBILE ? `Kualitas baru (${mbps} Mbps) dipakai saat layar PC dibuka lagi: Buka sesi, lalu Sambung lagi.`
+      : "Kualitas diterapkan. Layar PC dibuka ulang sebentar...", 4500);
   } catch (err) { toast(err.message, 5000); }
-  setTimeout(() => (btn.disabled = false), 8000);
+  setTimeout(() => (btn.disabled = false), IS_MOBILE ? 500 : 8000);
+}
+$("q-apply").onclick = applyQuality;
+// HP: mengubah kualitas selama sesi langsung dikirim (jeda singkat supaya beberapa perubahan beruntun jadi satu kiriman).
+let AUTO_APPLY = null;
+["q-res", "q-fps", "q-bitrate", "q-codec"].forEach((id) => $(id).addEventListener("change", () => {
+  if (!IS_MOBILE || !QUALITY_LIVE) return;
+  clearTimeout(AUTO_APPLY);
+  AUTO_APPLY = setTimeout(applyQuality, 700);
+}));
+$("s-quality-btn").onclick = () => {
+  setMinimized(true);
+  document.querySelector('.nav[data-tab="home"]').click();
+  setTimeout(() => $("q-res").closest(".card").scrollIntoView({ block: "start" }), 50);
 };
 $("s-close").onclick = async () => {
   setMinimized(false);

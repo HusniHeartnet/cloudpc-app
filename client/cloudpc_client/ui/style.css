@@ -185,6 +185,14 @@ details.more summary { cursor: pointer; color: var(--accent); font-size: 12.5px;
 body.is-mobile .only-mobile { display: block; }
 body.is-mobile .only-desktop { display: none !important; }
 #s-touch { margin-top: 12px; }
+#s-quality { margin-top: 12px; }
+/* HP: bitrate dipilih dari daftar, bukan slider. Slider geser berubah nilainya begitu jari menyentuhnya saat menggulir
+   halaman (sesi #113, 23 Nov 2026: pemain merasa memilih 1 Mbps, yang terkirim 28 Mbps). */
+body.is-mobile #q-bitrate { display: none; }
+/* HP: bilah sesi di atas, karena bagian bawah dipakai navigasi Beranda/Akun. */
+body.is-mobile .session-bar { top: 0; bottom: auto; border-top: 0; border-bottom: 1px solid var(--line); flex-wrap: nowrap; }
+body.is-mobile .session-bar .banner-actions { flex-wrap: nowrap; flex-shrink: 0; }
+body.is-mobile.has-session-bar .view.app { padding-bottom: 0; padding-top: 56px; }
 
 /* Layar sempit (HP tegak): satu kolom, navigasi pindah ke bawah, tombol seukuran jari. Jendela desktop minimal 900 px,
    jadi aturan ini tidak pernah aktif di sana. */

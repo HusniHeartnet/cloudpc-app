@@ -127,6 +127,7 @@
           </label>
           <button class="btn primary big" id="start-btn">Mulai sesi</button>
           <div class="hint" id="start-hint"></div>
+          <div class="hint only-mobile" id="start-quality"></div>
         </div>
       </div>
 
@@ -181,7 +182,8 @@
               <option value="120">120 (layar 120 Hz)</option><option value="144">144 (layar 144 Hz)</option></select></label>
           </div>
           <label class="compact">Bitrate: <b id="q-bitrate-val">20</b> Mbps
-            <input type="range" id="q-bitrate" min="1" max="50" step="1" value="20"></label>
+            <input type="range" id="q-bitrate" min="1" max="50" step="1" value="20">
+            <select id="q-bitrate-pick" class="only-mobile" aria-label="Bitrate"></select></label>
           <div class="row">
             <label class="compact">Codec
               <select id="q-codec"><option value="auto">Otomatis</option><option>HEVC</option><option>H.264</option><option>AV1</option></select></label>
@@ -339,6 +341,7 @@
       <b>Ctrl+Alt+Shift+X</b> layar penuh/jendela · <b>Ctrl+Alt+Shift+S</b> statistik ·
       <b>Ctrl+Alt+Shift+Q</b> tutup layar (sesi tetap jalan, bisa sambung lagi)
     </div>
+    <div class="muted small hidden" id="s-quality"></div>
     <div class="muted small only-mobile" id="s-touch">
       Di layar PC, ikon kanan atas: <b>keyboard</b> · <b>mouse</b> (layar jadi trackpad) · <b>stik</b> (Gamepad atau
       joystick Minecraft, posisinya bisa diatur) · <b>X</b> kembali ke sini tanpa mengakhiri sesi. Kiri atas: FPS, ping,
@@ -348,6 +351,7 @@
     <div class="error" id="s-error"></div>
     <div class="session-actions">
       <button class="btn hidden" id="s-minimize" title="Kembali ke aplikasi tanpa menutup sesi: ganti kualitas, unggah file">Perkecil</button>
+      <button class="btn hidden" id="s-quality-btn">Ubah kualitas</button>
       <button class="btn primary hidden" id="s-reconnect">Sambung lagi</button>
       <button class="btn danger" id="s-end">Akhiri sesi</button>
       <button class="btn primary hidden" id="s-close">Tutup</button>

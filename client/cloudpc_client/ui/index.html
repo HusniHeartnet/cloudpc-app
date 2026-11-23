@@ -175,12 +175,13 @@
             ditutup dan dibuka lagi ±5 detik. PC, file, dan kuotamu tidak terpengaruh.</div>
           <div class="row">
             <label class="compact">Resolusi
-              <select id="q-res"><option>1280x720</option><option selected>1920x1080</option><option>2560x1440</option></select></label>
+              <select id="q-res"><option value="854x480">854x480 (internet lambat)</option><option value="960x540">960x540 (hemat data)</option>
+                <option>1280x720</option><option selected>1920x1080</option><option>2560x1440</option></select></label>
             <label class="compact">FPS<select id="q-fps"><option>30</option><option selected>60</option>
               <option value="120">120 (layar 120 Hz)</option><option value="144">144 (layar 144 Hz)</option></select></label>
           </div>
           <label class="compact">Bitrate: <b id="q-bitrate-val">20</b> Mbps
-            <input type="range" id="q-bitrate" min="5" max="50" step="1" value="20"></label>
+            <input type="range" id="q-bitrate" min="1" max="50" step="1" value="20"></label>
           <div class="row">
             <label class="compact">Codec
               <select id="q-codec"><option value="auto">Otomatis</option><option>HEVC</option><option>H.264</option><option>AV1</option></select></label>

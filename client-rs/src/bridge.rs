@@ -273,8 +273,9 @@ impl Bridge {
         let ticket = t["ticket"].as_str().unwrap_or("").to_string();
         let top = max_mbps.unwrap_or(20.0).clamp(6.0, 30.0);
         let mut steps: Vec<Value> = vec![];
-        for factor in [1.0, 0.6, 0.4, 0.25] {
-            let mbps = (top * factor).round().max(4.0);
+        // Turun sampai ±2 Mbps: bitrate stream bisa diatur serendah 1 Mbps untuk internet HP yang lambat.
+        for factor in [1.0, 0.6, 0.4, 0.25, 0.1] {
+            let mbps = (top * factor).round().max(1.0);
             if steps.iter().any(|s| s["kbps"].as_f64() == Some(mbps * 1000.0)) {
                 continue;
             }

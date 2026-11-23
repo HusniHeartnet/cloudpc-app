@@ -532,11 +532,15 @@ $("net-btn").onclick = netCheck;
 // 120/144 FPS mengirim 2x lebih banyak frame: dengan bitrate rendah tiap frame jadi lebih buram.
 function fpsHint() {
   const fps = Number($("q-fps").value), mbps = Number($("q-bitrate").value);
-  const show = fps >= 120 && mbps < 30;
+  // Bitrate rendah (internet lambat/seluler): tiap frame hanya dapat sedikit data, jadi kurangi jumlah frame dan piksel.
+  const pixels = $("q-res").value.split("x").reduce((a, b) => a * Number(b), 1);
+  const low = mbps < 5 && (fps > 30 || pixels > 960 * 540);
+  const show = low || (fps >= 120 && mbps < 30);
   $("q-fps-hint").classList.toggle("hidden", !show);
-  if (show) $("q-fps-hint").textContent = `${fps} FPS dengan ${mbps} Mbps bisa terlihat buram; naikkan bitrate ke 30-40 Mbps.`;
+  if (low) $("q-fps-hint").textContent = `${mbps} Mbps terlalu kecil untuk ${$("q-res").value} ${fps} FPS: gambar akan pecah. Pilih 30 FPS dan resolusi ${mbps <= 2 ? "854x480" : "960x540"}.`;
+  else if (show) $("q-fps-hint").textContent = `${fps} FPS dengan ${mbps} Mbps bisa terlihat buram; naikkan bitrate ke 30-40 Mbps.`;
 }
-["q-fps", "q-bitrate"].forEach((id) => $(id).addEventListener("input", fpsHint));
+["q-fps", "q-bitrate", "q-res"].forEach((id) => $(id).addEventListener("input", fpsHint));
 
 // Preset "koneksi tidak stabil": jitter tinggi atau paket hilang (mis. Wi-Fi kafe) membuat video datang bergerombol dan
 // kursor terasa patah. Tawarkan 60 FPS / 12 Mbps hanya bila pengaturan sekarang di atas itu. Ambang dari hasil cek koneksi.

@@ -1,0 +1,10 @@
+# Aplikasi pemain CloudPC (Rust / Tauri): desktop dan Android. Lisensi GPL-3.0-only, lihat LICENSE.
+[workspace]
+resolver = "2"
+members = ["common-rs", "client-rs"]
+
+[profile.release]
+opt-level = "s"
+lto = true
+codegen-units = 1
+strip = true

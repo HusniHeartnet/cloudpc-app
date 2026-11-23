@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>CloudPC</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- LOGIN -->
+<section id="view-login" class="view login">
+  <div class="login-stack">
+  <div class="banner info hidden update-banner" id="login-update">
+    <span class="update-body"><span class="update-text">Versi baru CloudPC tersedia.</span>
+      <span class="bar update-bar hidden"><span></span></span></span>
+    <span class="banner-actions"><button type="button" class="btn small primary update-now">Update sekarang</button></span>
+  </div>
+  <form id="login-form" class="login-card">
+    <div class="logo"><span class="logo-mark"></span><span class="brand">CloudPC</span></div>
+    <p class="muted">PC gaming dan editing di cloud. Masuk untuk mulai.</p>
+    <label>Email<input id="login-email" type="email" autocomplete="username" required></label>
+    <label>Password<input id="login-password" type="password" autocomplete="current-password" required></label>
+    <label class="check"><input type="checkbox" id="login-remember" checked> Ingat saya di perangkat ini</label>
+    <button class="btn primary wide" id="login-btn">Masuk</button>
+    <div class="error" id="login-error"></div>
+    <p class="muted small center"><button type="button" class="link" id="to-forgot">Lupa password?</button></p>
+    <p class="muted small center">Punya kode undangan? <button type="button" class="link" id="to-register">Daftar di sini</button></p>
+  </form>
+
+  <form id="forgot-form" class="login-card hidden">
+    <div class="logo"><span class="logo-mark"></span><span class="brand">CloudPC</span></div>
+    <p class="muted">Lupa password? Minta kode reset, lalu admin CloudPC mengirimnya ke WhatsApp (atau email) akunmu.</p>
+    <label>Email akun<input id="fg-email" type="email" autocomplete="username" required></label>
+    <button type="button" class="btn wide" id="fg-request">Minta kode reset</button>
+    <div class="muted small" id="fg-sent"></div>
+    <p class="muted small">Sudah dapat kode dari admin? Isi di bawah ini.</p>
+    <label>Kode reset<input id="fg-code" placeholder="XXXX-XXXX" autocomplete="one-time-code" maxlength="20"></label>
+    <div class="row">
+      <label>Password baru<input id="fg-password" type="password" autocomplete="new-password" minlength="8"></label>
+      <label>Ulangi password<input id="fg-password2" type="password" autocomplete="new-password" minlength="8"></label>
+    </div>
+    <label class="check"><input type="checkbox" id="fg-remember" checked> Ingat saya di perangkat ini</label>
+    <button class="btn primary wide" id="fg-btn">Simpan password baru dan masuk</button>
+    <div class="error" id="forgot-error"></div>
+    <p class="muted small center"><button type="button" class="link" id="fg-to-login">Kembali ke Masuk</button></p>
+  </form>
+
+  <form id="register-form" class="login-card hidden">
+    <div class="logo"><span class="logo-mark"></span><span class="brand">CloudPC</span></div>
+    <p class="muted">Daftar dengan kode undangan dari tim CloudPC.</p>
+    <label>Kode undangan<input id="reg-code" placeholder="CPC-XXXX-XXXX" autocomplete="off" maxlength="30" required></label>
+    <label>Nama<input id="reg-name" autocomplete="name" maxlength="120" required></label>
+    <label>Email<input id="reg-email" type="email" autocomplete="username" required></label>
+    <div class="row">
+      <label>Password<input id="reg-password" type="password" autocomplete="new-password" minlength="8" required></label>
+      <label>Ulangi password<input id="reg-password2" type="password" autocomplete="new-password" minlength="8" required></label>
+    </div>
+    <div class="row">
+      <label>Kota tempatmu main sekarang<input id="reg-city" maxlength="60" list="city-list" placeholder="mis. Jakarta Selatan" required></label>
+      <label>Provider internet<select id="reg-isp" class="isp-select" required></select></label>
+    </div>
+    <label class="hidden" id="reg-isp-other-wrap">Nama provider<input id="reg-isp-other" maxlength="40"></label>
+    <label class="check"><input type="checkbox" id="reg-remember" checked> Ingat saya di perangkat ini</label>
+    <button class="btn primary wide" id="register-btn">Daftar dan masuk</button>
+    <div class="error" id="register-error"></div>
+    <p class="muted small center">Sudah punya akun? <button type="button" class="link" id="to-login">Masuk</button></p>
+  </form>
+  </div>
+</section>
+
+<!-- APLIKASI -->
+<section id="view-app" class="view app hidden">
+  <aside class="sidebar">
+    <div class="logo"><span class="logo-mark"></span><span class="brand">CloudPC</span></div>
+    <nav>
+      <button class="nav active" data-tab="home">Beranda</button>
+      <button class="nav only-desktop" data-tab="files">File saya</button>
+      <button class="nav" data-tab="account">Akun</button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="user" id="user-email"></div>
+      <button class="link" id="logout-btn">Keluar</button>
+    </div>
+  </aside>
+
+  <main>
+    <!-- BERANDA -->
+    <div class="tab" id="tab-home">
+      <div class="banner warn hidden" id="moonlight-missing">
+        Moonlight belum terpasang di laptop ini. Unduh dari <b>moonlight-stream.org</b>, pasang, lalu buka ulang aplikasi.
+      </div>
+
+      <div class="banner warn hidden" id="mobile-stream-note">
+        Layar PC belum tersedia di HP ini. Akun, kuota, cek koneksi, dan jam ramai tetap bisa dipakai.
+      </div>
+
+      <div class="banner info hidden update-banner" id="update-banner">
+        <span class="update-body"><span class="update-text">Versi baru CloudPC tersedia.</span>
+          <span class="bar update-bar hidden"><span></span></span></span>
+        <span class="banner-actions">
+          <button class="btn small primary update-now">Update sekarang</button>
+          <button class="btn small ghost" id="update-later">Nanti</button>
+        </span>
+      </div>
+
+      <div class="banner info hidden" id="fb-reminder">
+        <span id="fb-reminder-text">Sesi terakhirmu belum dinilai.</span>
+        <span class="banner-actions">
+          <button class="btn small primary" id="fb-reminder-open">Isi sekarang (20 detik)</button>
+          <button class="btn small ghost" id="fb-reminder-later">Nanti</button>
+        </span>
+      </div>
+
+      <div class="hero card">
+        <div>
+          <div class="eyebrow" id="profile-name">Profile</div>
+          <h1 id="hero-title">PC kamu siap dipakai</h1>
+          <p class="muted" id="hero-sub">Semua file dan game tersimpan otomatis di drive P: milikmu.</p>
+        </div>
+        <div class="hero-actions">
+          <label class="hint hidden" id="mode-wrap">Mode:
+            <select id="mode-select">
+              <option value="profile">Profil saya (data tersimpan)</option>
+              <option value="ephemeral">Sesi bersih (tanpa simpan, ala warnet)</option>
+            </select>
+          </label>
+          <button class="btn primary big" id="start-btn">Mulai sesi</button>
+          <div class="hint" id="start-hint"></div>
+        </div>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-head"><h2>Kuota hari ini</h2><span class="pill" id="plan-name">-</span></div>
+          <div class="big-num" id="quota-left">-</div>
+          <div class="bar"><span id="quota-bar"></span></div>
+          <div class="muted small" id="quota-detail"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Penyimpanan</h2><span class="pill" id="storage-total">-</span></div>
+          <div class="big-num" id="storage-used">-</div>
+          <div class="bar"><span id="storage-bar"></span></div>
+          <div class="muted small" id="storage-detail"></div>
+          <div class="addons" id="addons"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Koneksi</h2><button class="link" id="net-btn">Cek ulang</button></div>
+          <div class="big-num" id="net-rtt">-</div>
+          <div class="muted small" id="net-detail">Belum dicek</div>
+          <div class="routes hidden" id="net-routes" role="radiogroup" aria-label="Jalur ke PC"></div>
+          <div class="burst" id="burst-wrap">
+            <button class="link" id="burst-btn">Tes kualitas stream (±10 detik)</button>
+            <div class="muted small hidden" id="burst-out"></div>
+            <button class="link hidden" id="burst-apply"></button>
+          </div>
+          <div class="row">
+            <label class="compact">Jaringan
+              <select id="conn-type"><option value="wifi">Wi-Fi</option><option value="lan">Kabel LAN</option>
+                <option value="seluler">Hotspot / seluler</option></select></label>
+            <label class="compact">Kota tempatmu main sekarang<input id="city" placeholder="mis. Klaten" maxlength="60" list="city-list"></label>
+          </div>
+          <div class="row">
+            <label class="compact">Provider internet<select id="isp" class="isp-select"></select></label>
+            <label class="compact hidden" id="isp-other-wrap">Nama provider<input id="isp-other" maxlength="40"></label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h2>Kualitas stream</h2>
+            <button type="button" class="btn small primary hidden" id="q-apply">Terapkan ke sesi berjalan</button></div>
+          <div class="muted small hidden" id="q-live-hint">Sesi sedang berjalan. Ubah pengaturan lalu tekan "Terapkan": layar PC
+            ditutup dan dibuka lagi ±5 detik. PC, file, dan kuotamu tidak terpengaruh.</div>
+          <div class="row">
+            <label class="compact">Resolusi
+              <select id="q-res"><option>1280x720</option><option selected>1920x1080</option><option>2560x1440</option></select></label>
+            <label class="compact">FPS<select id="q-fps"><option>30</option><option selected>60</option>
+              <option value="120">120 (layar 120 Hz)</option><option value="144">144 (layar 144 Hz)</option></select></label>
+          </div>
+          <label class="compact">Bitrate: <b id="q-bitrate-val">20</b> Mbps
+            <input type="range" id="q-bitrate" min="5" max="50" step="1" value="20"></label>
+          <div class="row">
+            <label class="compact">Codec
+              <select id="q-codec"><option value="auto">Otomatis</option><option>HEVC</option><option>H.264</option><option>AV1</option></select></label>
+            <label class="compact only-desktop">Tampilan
+              <select id="q-mode"><option value="fullscreen">Layar penuh</option><option value="borderless">Borderless</option>
+                <option value="windowed">Jendela</option></select></label>
+          </div>
+          <div class="muted small hidden" id="q-data-hint"></div>
+          <div class="muted small only-desktop">Gambar kurang tajam? Naikkan bitrate (20-30 Mbps) atau pilih codec AV1 kalau laptopmu
+            mendukung. Patah-patah? Turunkan ke 10-15 Mbps. 120/144 FPS terasa lebih responsif untuk game cepat
+            kalau layarmu mendukung; naikkan bitrate ke 30-40 Mbps supaya gambar tetap tajam.</div>
+          <div class="muted small warn-text hidden" id="q-fps-hint"></div>
+          <div class="banner info hidden" id="q-wifi-hint">
+            <span class="update-body">Koneksimu sedang tidak stabil (<span id="q-wifi-why"></span>). Kualitas lebih rendah membuat
+              stream dan kursor lebih mulus.</span>
+            <span class="banner-actions"><button type="button" class="btn small primary" id="q-wifi-preset">Pakai 60 FPS, 12 Mbps</button></span>
+          </div>
+        </div>
+
+        <div class="card hidden" id="busy-card">
+          <div class="card-head"><h2>Jam ramai</h2><button class="link" id="busy-btn">Muat ulang</button></div>
+          <div class="big-num" id="busy-now">-</div>
+          <svg id="busy-map" class="busy-map" viewBox="0 0 266 82" width="100%" role="img"
+               aria-label="Peta panas pemakaian PC per hari dan jam: hitam kosong, biru sedang, merah ramai"></svg>
+          <div class="muted small" id="busy-quiet"></div>
+          <div class="muted small" id="busy-busy"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- AKUN -->
+    <div class="tab hidden" id="tab-account">
+      <div class="grid">
+        <div class="card only-mobile">
+          <div class="card-head"><h2>Akun ini</h2></div>
+          <div class="user" id="user-email-m"></div>
+          <div class="session-actions"><button type="button" class="btn danger" id="logout-btn-m">Keluar dari akun</button></div>
+        </div>
+        <form class="card" id="profile-form">
+          <div class="card-head"><h2>Profil</h2></div>
+          <label class="compact">Email<input id="acc-email" disabled></label>
+          <label class="compact">Nama<input id="acc-name" maxlength="120" required></label>
+          <div class="row">
+            <label class="compact">Kota tempatmu main sekarang<input id="acc-city" maxlength="60" list="city-list"></label>
+            <label class="compact">Provider internet<select id="acc-isp" class="isp-select"></select></label>
+          </div>
+          <label class="compact hidden" id="acc-isp-other-wrap">Nama provider<input id="acc-isp-other" maxlength="40"></label>
+          <label class="compact">WhatsApp (opsional, untuk bantuan)<input id="acc-phone" maxlength="30" placeholder="mis. 0812 3456 7890" inputmode="tel"></label>
+          <div class="session-actions"><button class="btn primary" id="profile-save">Simpan profil</button></div>
+          <div class="muted small" id="profile-status"></div>
+        </form>
+
+        <form class="card" id="password-form">
+          <div class="card-head"><h2>Ganti password</h2></div>
+          <label class="compact">Password lama<input id="pw-old" type="password" autocomplete="current-password" required></label>
+          <label class="compact">Password baru (min. 8 karakter)<input id="pw-new" type="password" autocomplete="new-password" minlength="8" required></label>
+          <label class="compact">Ulangi password baru<input id="pw-new2" type="password" autocomplete="new-password" minlength="8" required></label>
+          <div class="session-actions"><button class="btn primary" id="pw-save">Ganti password</button></div>
+          <div class="muted small" id="pw-status"></div>
+          <p class="muted small">Setelah password diganti, login di perangkat lain otomatis keluar.</p>
+        </form>
+      </div>
+      <p class="muted small only-desktop">Penampil layar PC berbasis Moonlight, perangkat lunak open source berlisensi GNU GPL v3.
+        Lisensi dan alamat source code-nya ada di folder <b>stream</b> aplikasi ini (LICENSE.txt, SOURCE.txt).</p>
+      <!-- Aplikasi HP dibagikan sebagai satu APK bersama penampil layar PC (GPL-3.0), jadi seluruhnya berlisensi GPL-3.0 dan
+           alamat kode sumbernya wajib disebut di sini. -->
+      <p class="muted small only-mobile">CloudPC untuk Android adalah perangkat lunak bebas berlisensi GNU GPL v3, tanpa jaminan.
+        Kode sumber aplikasi: <b>github.com/HusniHeartnet/cloudpc-app</b> · penampil layar PC:
+        <b>github.com/HusniHeartnet/cloudpc-stream-rs</b>.</p>
+      <div class="card update-card">
+        <div class="card-head"><h2>Pembaruan aplikasi</h2><button type="button" class="link" id="update-check">Cek pembaruan</button></div>
+        <p class="muted small">Versi terpasang <b id="app-version">-</b> · <span id="acc-update-status">belum dicek</span></p>
+        <div class="bar update-bar hidden"><span></span></div>
+        <div class="session-actions hidden" id="acc-update-actions">
+          <button type="button" class="btn primary update-now">Update sekarang</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- FILE -->
+    <div class="tab hidden" id="tab-files">
+      <div class="card">
+        <div class="card-head">
+          <div>
+            <h2>File saya</h2>
+            <p class="muted small">File yang kamu unggah masuk ke <b>P:\Inbox</b>: langsung kalau PC sedang menyala,
+              atau saat sesi berikutnya dimulai. Upload tidak memotong jam main.
+              Taruh file di <b>P:\Outbox</b> dan file itu dikirim ke sini selama sesi berjalan, lalu bisa diunduh kapan saja
+              dari perangkat mana pun.</p>
+          </div>
+          <button class="btn primary" id="upload-btn">Unggah file</button>
+        </div>
+
+        <div class="preview hidden" id="upload-preview">
+          <div id="preview-text"></div>
+          <div class="bar"><span id="preview-bar"></span></div>
+          <div class="muted small" id="preview-detail"></div>
+          <div class="session-actions">
+            <button class="btn ghost" id="preview-cancel">Batal</button>
+            <button class="btn primary" id="preview-ok">Mulai unggah</button>
+          </div>
+        </div>
+
+        <div class="uploads hidden" id="uploads">
+          <div class="card-head"><h2>Antrean upload</h2><button class="link" id="uploads-clear">Bersihkan yang selesai</button></div>
+          <div id="uploads-list"></div>
+          <div class="muted small">Upload bisa dijeda dan dilanjutkan. Kalau koneksi putus atau aplikasi ditutup,
+            upload lanjut dari posisi terakhir.</div>
+        </div>
+        <div class="muted small" id="upload-status"></div>
+        <table class="files">
+          <thead><tr><th>Nama</th><th>Ukuran</th><th>Arah</th><th>Status</th><th></th></tr></thead>
+          <tbody id="files-body"></tbody>
+        </table>
+        <div class="empty muted hidden" id="files-empty">Belum ada file.</div>
+      </div>
+    </div>
+  </main>
+</section>
+
+<!-- BILAH SESI: muncul saat layar sesi diperkecil, sesi tetap berjalan -->
+<div class="session-bar hidden" id="session-bar">
+  <span class="live-dot"></span>
+  <span id="sb-text">Sesi berjalan</span>
+  <span class="banner-actions">
+    <button type="button" class="btn small" id="sb-open">Buka sesi</button>
+    <button type="button" class="btn small danger" id="sb-end">Akhiri sesi</button>
+  </span>
+</div>
+
+<!-- LAYAR SESI -->
+<div class="overlay hidden" id="session-overlay">
+  <div class="session-card">
+    <div class="eyebrow">Sesi</div>
+    <h1 id="s-title">Memesan PC...</h1>
+    <p class="muted" id="s-msg"></p>
+    <ol class="steps" id="s-steps">
+      <li data-step="preparing">Menyiapkan PC dan penyimpanan</li>
+      <li data-step="pairing">Menghubungkan perangkat</li>
+      <li data-step="connecting">Membuka layar PC</li>
+      <li data-step="streaming">Tersambung</li>
+    </ol>
+    <div class="timer hidden" id="s-queue">
+      <div><div class="muted small">Posisi antrean</div><div class="big-num" id="s-q-pos">-</div></div>
+      <div><div class="muted small">Perkiraan tunggu</div><div class="big-num" id="s-q-eta">-</div></div>
+    </div>
+    <div class="busy hidden" id="s-busy"><div class="bar indet"><span></span></div></div>
+    <div class="summary hidden" id="s-summary"></div>
+    <div class="timer hidden" id="s-timer">
+      <div><div class="muted small" id="s-left-label">Sisa waktu hari ini</div><div class="big-num" id="s-left">-</div></div>
+      <div><div class="muted small">Durasi sesi</div><div class="big-num" id="s-elapsed">-</div></div>
+    </div>
+    <div class="muted small hidden only-desktop" id="s-keys">
+      Pintasan di layar PC: <b>Ctrl+Alt+Shift+D</b> kecilkan jendela · <b>Ctrl+Alt+Shift+Z</b> lepas mouse/keyboard ·
+      <b>Ctrl+Alt+Shift+X</b> layar penuh/jendela · <b>Ctrl+Alt+Shift+S</b> statistik ·
+      <b>Ctrl+Alt+Shift+Q</b> tutup layar (sesi tetap jalan, bisa sambung lagi)
+    </div>
+    <div class="muted small only-mobile" id="s-touch">
+      Di layar PC, ikon kanan atas: <b>keyboard</b> · <b>mouse</b> (layar jadi trackpad) · <b>stik</b> (Gamepad atau
+      joystick Minecraft, posisinya bisa diatur) · <b>X</b> kembali ke sini tanpa mengakhiri sesi. Kiri atas: FPS, ping,
+      dan Mbps (ketuk untuk rincian). Trackpad: geser = kursor · ketuk = klik · ketuk lalu tahan-geser = seret · dua jari
+      = klik kanan atau scroll · tiga jari = keyboard. Gamepad Bluetooth langsung terbaca.
+    </div>
+    <div class="error" id="s-error"></div>
+    <div class="session-actions">
+      <button class="btn hidden" id="s-minimize" title="Kembali ke aplikasi tanpa menutup sesi: ganti kualitas, unggah file">Perkecil</button>
+      <button class="btn primary hidden" id="s-reconnect">Sambung lagi</button>
+      <button class="btn danger" id="s-end">Akhiri sesi</button>
+      <button class="btn primary hidden" id="s-close">Tutup</button>
+    </div>
+  </div>
+</div>
+
+<!-- SEBELUM SESI PERTAMA: lokasi & provider (server hanya melihat IP Tailscale, jadi ditanyakan langsung) -->
+<div class="overlay hidden" id="update-overlay">
+  <div class="session-card">
+    <div class="eyebrow">Pembaruan</div>
+    <h1>Memasang pembaruan...</h1>
+    <p class="muted">CloudPC akan tertutup sebentar lalu terbuka lagi dengan versi <b class="update-version">baru</b>.
+      Tidak perlu melakukan apa-apa.</p>
+    <div class="bar"><span class="indeterminate"></span></div>
+  </div>
+</div>
+
+<div class="overlay hidden" id="setup-overlay">
+  <form class="session-card" id="setup-form">
+    <div class="eyebrow">Sebelum mulai</div>
+    <h1>Kamu main dari mana?</h1>
+    <p class="muted">Kami memakai ini untuk mengukur kualitas koneksi per kota dan provider. Cukup sekali,
+      bisa diubah di kartu Koneksi.</p>
+    <label class="compact">Kota tempatmu main sekarang<input id="setup-city" maxlength="60" list="city-list" placeholder="mis. Jakarta Selatan" required></label>
+    <div class="row">
+      <label class="compact">Provider internet<select id="setup-isp" class="isp-select" required></select></label>
+      <label class="compact">Jaringan
+        <select id="setup-conn"><option value="wifi">Wi-Fi</option><option value="lan">Kabel LAN</option>
+          <option value="seluler">Hotspot / seluler</option></select></label>
+    </div>
+    <label class="compact hidden" id="setup-isp-other-wrap">Nama provider<input id="setup-isp-other" maxlength="40"></label>
+    <div class="error" id="setup-error"></div>
+    <div class="session-actions">
+      <button type="button" class="btn ghost" id="setup-cancel">Batal</button>
+      <button class="btn primary">Simpan &amp; mulai sesi</button>
+    </div>
+  </form>
+</div>
+<datalist id="city-list">
+  <option>Jakarta</option><option>Bogor</option><option>Depok</option><option>Tangerang</option><option>Bekasi</option>
+  <option>Bandung</option><option>Cirebon</option><option>Semarang</option><option>Yogyakarta</option><option>Solo</option>
+  <option>Klaten</option><option>Surabaya</option><option>Malang</option><option>Denpasar</option><option>Medan</option>
+  <option>Palembang</option><option>Pekanbaru</option><option>Batam</option><option>Lampung</option><option>Makassar</option>
+  <option>Balikpapan</option><option>Samarinda</option><option>Banjarmasin</option><option>Pontianak</option><option>Manado</option>
+</datalist>
+
+<!-- FEEDBACK -->
+<div class="overlay hidden" id="feedback-overlay">
+  <form class="session-card feedback" id="feedback-form">
+    <div class="eyebrow">Bantu kami</div>
+    <h1>Bagaimana sesinya?</h1>
+    <p class="muted">3 pertanyaan, 20 detik. Masukanmu menentukan harga dan fitur saat launch.</p>
+    <div class="rating" data-name="latency_score" data-required="1"><span>1. Terasa delay?</span><div></div></div>
+    <div class="rating-hint muted small"><span>1 = sangat terasa</span><span>5 = tidak terasa sama sekali</span></div>
+    <div class="rating" data-name="quality_score" data-required="1"><span>2. Kualitas gambar</span><div></div></div>
+    <div class="rating-hint muted small"><span>1 = buram / kotak-kotak</span><span>5 = tajam seperti di PC sendiri</span></div>
+    <div class="q-label">3. Mau bayar berapa per bulan untuk 6 jam/hari?</div>
+    <div class="chips" id="fb-price">
+      <button type="button" data-v="0">Tidak mau bayar</button>
+      <button type="button" data-v="150000">Rp150 rb</button>
+      <button type="button" data-v="250000">Rp250 rb</button>
+      <button type="button" data-v="350000">Rp350 rb</button>
+      <button type="button" data-v="500000">Rp500 rb</button>
+      <button type="button" data-v="750000">Rp750 rb+</button>
+      <button type="button" data-v="other">Lainnya</button>
+    </div>
+    <input id="fb-price-other" class="hidden" type="number" min="0" step="10000" placeholder="Rp per bulan, mis. 300000">
+
+    <details class="more">
+      <summary>Tambah detail (opsional)</summary>
+      <div class="rating" data-name="stutter_score"><span>Kelancaran (tanpa patah-patah)</span><div></div></div>
+      <div class="row">
+        <label class="compact">Dipakai untuk
+          <select name="use_case"><option value="">-</option><option value="gaming">Gaming</option><option value="editing">Editing</option>
+            <option value="kerja">Kerja</option><option value="lainnya">Lainnya</option></select></label>
+        <label class="compact">Game/aplikasi yang dicoba<input name="apps_tried" maxlength="200"></label>
+      </div>
+      <div class="row">
+        <label class="compact">Sekarang biasanya pakai
+          <select name="current_alternative"><option value="">-</option><option>PC/laptop sendiri</option><option>Warnet</option>
+            <option>GeForce Now / cloud lain</option><option>Konsol</option><option>Belum punya</option></select></label>
+        <label class="compact">Kalau Rp500.000/bulan, mau langganan?
+          <select name="would_subscribe"><option value="">-</option><option value="ya">Ya</option><option value="mungkin">Mungkin</option>
+            <option value="tidak">Tidak</option></select></label>
+      </div>
+      <div class="row">
+        <label class="compact">Jam paling sering main/kerja<input name="preferred_hours" maxlength="80" placeholder="mis. 19.00-23.00"></label>
+        <label class="compact">Perangkat yang akan dipakai<input name="devices" maxlength="120" placeholder="mis. laptop Windows"></label>
+      </div>
+      <label class="compact">Saran atau keluhan<textarea name="comment" rows="2" maxlength="2000"></textarea></label>
+    </details>
+    <div class="error" id="fb-error"></div>
+    <div class="session-actions">
+      <button type="button" class="btn ghost" id="fb-skip">Lewati</button>
+      <button class="btn primary">Kirim</button>
+    </div>
+  </form>
+</div>
+
+<div class="toast hidden" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,32 @@
+[package]
+name = "cloudpc-client"
+version = "0.1.0"
+edition = "2021"
+description = "Aplikasi pemain CloudPC (Tauri), port Rust dari client/ Python"
+
+# Pustaka: dimuat aplikasi Android (cdylib) dan dipakai program desktop `cloudpc-client` (rlib). Nama berakhiran _lib
+# supaya tidak bertabrakan dengan nama program di Windows.
+[lib]
+name = "cloudpc_client_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+regex = "1"
+sha2 = "0.10"
+tauri-plugin-dialog = "2"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+cloudpc-common = { path = "../common-rs" }
+
+# Tray dan satu-instans hanya ada di desktop.
+[target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-single-instance = "2"
+
+[dev-dependencies]
+tempfile = "3"

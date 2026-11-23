@@ -1,0 +1,11 @@
+/target
+/stream-rs
+/deploy
+client-rs/dist/
+client-rs/gen/schemas/
+client-rs/gen/android/app/src/main/jniLibs/
+**/build/
+**/.gradle/
+*.jks
+keystore.properties
+client_config.json

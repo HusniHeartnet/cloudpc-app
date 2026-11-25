@@ -16,8 +16,7 @@ use crate::http::{ApiError, Http};
 use crate::moonlight::{self, Moonlight, Proc};
 use crate::netcheck;
 
-const SUNSHINE_TCP_PORT: u16 = 47984; // port HTTPS Sunshine yang dipakai Moonlight; dipakai untuk mengukur RTT
-const SUNSHINE_PAIR_PORT: u16 = 47989; // port HTTP Sunshine untuk pairing
+// Port host stream tidak tetap: alamat jalur dari server boleh membawa port dasar (`IP:port`), lihat netcheck::split_address.
 const RELAY_ROUTE: &str = "relay"; // jalur cadangan yang selalu ada (VPS + WireGuard), lihat server routes.py
 const QUICK_FAIL_SECONDS: f64 = 20.0; // stream jalur langsung yang tertutup secepat ini dianggap jalurnya gagal
 
@@ -436,7 +435,7 @@ impl SessionEngine {
             return Ok(s);
         }
         let host = s["host_address"].as_str().unwrap_or("");
-        let probe = netcheck::tcp_probe(host, SUNSHINE_PAIR_PORT, 2, Duration::from_secs(2), Duration::from_millis(150));
+        let probe = netcheck::probe_pair_port(host, 2, Duration::from_secs(2), Duration::from_millis(150));
         if probe["rtt_ms"].is_null() {
             let id = s["id"].as_i64().unwrap_or(0);
             return Ok(self.switch_to_relay(id, "pairing")?);
@@ -561,7 +560,7 @@ impl SessionEngine {
                 return Ok(false);
             }
             if last_hb.map_or(true, |t| t.elapsed().as_secs_f64() > self.cfg.heartbeat_interval) {
-                let m = netcheck::tcp_probe(host, SUNSHINE_TCP_PORT, 5, Duration::from_millis(1500), Duration::from_millis(100));
+                let m = netcheck::probe_stream_port(host, 5, Duration::from_millis(1500), Duration::from_millis(100));
                 let metrics: Map<String, Value> = ["rtt_ms", "jitter_ms", "loss_pct"].iter().map(|k| ((*k).to_string(), m[*k].clone())).collect();
                 // Jaringan putus sebentar (Wi-Fi kafe) tidak boleh mengakhiri sesi: lihat NET_BLIP_TOLERANCE_SECONDS.
                 let hb = self.blips.filter(self.heartbeat(sid, Some(Value::Object(metrics))), Duration::from_secs(NET_BLIP_TOLERANCE_SECONDS))?;

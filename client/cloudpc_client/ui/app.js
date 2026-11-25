@@ -829,6 +829,14 @@ async function pollSession() {
   }
   $("s-reconnect").classList.toggle("hidden", phase !== "stream_closed");
   const finished = phase === "ended" || phase === "error" || phase === "idle";
+  // Tombol beranda ("Mulai sesi"/"Buka sesi") dibaca dari ME, yang diambil sebelum sesi ini dimulai. Selaraskan dengan
+  // keadaan mesin sesi supaya saat layar sesi diperkecil beranda tidak menawarkan "Mulai sesi" untuk sesi yang berjalan.
+  if (ME && phase !== "queued") {
+    const liveNow = finished ? null : (s || ME.live_session || null);
+    const changed = !!liveNow !== !!ME.live_session;
+    ME.live_session = liveNow;
+    if (changed) render();
+  }
   // Perkecil hanya saat stream berjalan; kualitas hanya bisa diganti saat sesi hidup. Selain "streaming"/"connecting"
   // (layar tertutup, mengakhiri, selesai) layar sesi dikembalikan supaya tombol dan ringkasannya terlihat.
   const inStream = phase === "streaming" || (phase === "connecting" && live);

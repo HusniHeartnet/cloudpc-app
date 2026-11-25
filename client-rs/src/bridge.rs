@@ -19,7 +19,6 @@ use crate::updater::{self, Updater};
 use crate::uploads::Uploads;
 use crate::{moonlight, netcheck};
 
-const SUNSHINE_TCP_PORT: u16 = 47984; // port HTTPS Sunshine yang dipakai Moonlight; dipakai untuk mengukur RTT
 const PREF_KEYS: [&str; 8] = ["quality", "connection", "city", "isp", "isp_other", "email", "route", "mode"];
 
 pub struct Bridge {
@@ -297,7 +296,7 @@ impl Bridge {
     fn net_check(&self, routes: Option<&Value>) -> Value {
         let result = match routes.and_then(Value::as_array).filter(|r| !r.is_empty()) {
             Some(routes) => {
-                let res = netcheck::visible(netcheck::probe_routes(routes, SUNSHINE_TCP_PORT, 6)); // Lokal yang tidak terdeteksi disembunyikan
+                let res = netcheck::visible(netcheck::probe_routes(routes, 6)); // Lokal yang tidak terdeteksi disembunyikan
                 let auto = netcheck::best_route(&res);
                 let best = res.iter().find(|r| r["id"].as_str() == auto.as_deref()).or(res.first()).cloned().unwrap_or(Value::Null);
                 let mut out = Map::new();
@@ -311,7 +310,7 @@ impl Bridge {
             None => {
                 let (host, port) = reqwest::Url::parse(&self.cfg.api_url)
                     .ok()
-                    .map(|u| (u.host_str().unwrap_or("").to_string(), u.port_or_known_default().unwrap_or(SUNSHINE_TCP_PORT)))
+                    .map(|u| (u.host_str().unwrap_or("").to_string(), u.port_or_known_default().unwrap_or(443)))
                     .unwrap_or_default();
                 netcheck::probe_host(&host, port)
             }

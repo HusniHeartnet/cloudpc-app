@@ -159,7 +159,45 @@ pub fn probe_host(host: &str, port: u16) -> Value {
     r
 }
 
-const SUNSHINE_HTTP_PORT: u16 = 47989;
+/// Port dasar bawaan host stream (HTTP: /serverinfo dan pairing). Port lain dihitung dari sini (HTTPS = dasar - 5).
+pub const DEFAULT_HTTP_PORT: u16 = 47989;
+
+/// Alamat jalur boleh membawa port dasar host (`1.2.3.4:48189`, `[2001:db8::1]:48189`), supaya beberapa PC bisa berbagi
+/// satu IP relay. Tanpa port = bawaan 47989. IPv6 tanpa kurung dianggap tanpa port. Mengembalikan (host, port HTTP).
+pub fn split_address(address: &str) -> (String, u16) {
+    let a = address.trim();
+    if let Some(rest) = a.strip_prefix('[') {
+        if let Some((host, tail)) = rest.split_once(']') {
+            let port = tail.strip_prefix(':').and_then(|p| p.parse().ok()).filter(|p| *p != 0).unwrap_or(DEFAULT_HTTP_PORT);
+            return (host.to_string(), port);
+        }
+    }
+    if a.matches(':').count() == 1 {
+        if let Some((host, port)) = a.split_once(':') {
+            if let Some(port) = port.parse::<u16>().ok().filter(|p| *p != 0) {
+                return (host.to_string(), port);
+            }
+        }
+    }
+    (a.to_string(), DEFAULT_HTTP_PORT)
+}
+
+/// Port HTTPS host (dipakai mengukur RTT) dari port HTTP-nya.
+pub fn https_port(http_port: u16) -> u16 {
+    http_port.saturating_sub(5).max(1)
+}
+
+/// Ukur waktu handshake TCP ke port HTTPS host pada alamat jalur (dengan atau tanpa port).
+pub fn probe_stream_port(address: &str, count: usize, timeout: Duration, gap: Duration) -> Value {
+    let (host, http) = split_address(address);
+    tcp_probe(&host, https_port(http), count, timeout, gap)
+}
+
+/// Sama, tetapi ke port HTTP (pairing).
+pub fn probe_pair_port(address: &str, count: usize, timeout: Duration, gap: Duration) -> Value {
+    let (host, http) = split_address(address);
+    tcp_probe(&host, http, count, timeout, gap)
+}
 
 pub fn parse_uniqueid(xml: &str) -> Option<String> {
     let id = xml.split("<uniqueid>").nth(1)?.split("</uniqueid>").next()?.trim();
@@ -185,18 +223,21 @@ pub fn is_same_host(address: &str, port: u16, uniqueid: &str) -> bool {
 /// Ukur semua jalur koneksi bersamaan (masing-masing beberapa detik) ke port Sunshine di PC host.
 /// Jalur `kind == "local"` hanya kandidat: bila bukan PC yang sama (atau tidak terjangkau) ditandai `hidden` dan
 /// dibuang oleh `visible` supaya tidak ditampilkan ke pemain.
-pub fn probe_routes(routes: &[Value], port: u16, count: usize) -> Vec<Value> {
-    probe_routes_with(routes, port, SUNSHINE_HTTP_PORT, count)
+pub fn probe_routes(routes: &[Value], count: usize) -> Vec<Value> {
+    probe_routes_with(routes, None, count)
 }
 
-fn probe_routes_with(routes: &[Value], port: u16, http_port: u16, count: usize) -> Vec<Value> {
+/// `ports` = (port ukur, port HTTP) paksa untuk tes; `None` = dari alamat tiap jalur.
+fn probe_routes_with(routes: &[Value], ports: Option<(u16, u16)>, count: usize) -> Vec<Value> {
     let handles: Vec<_> = routes
         .iter()
         .cloned()
         .map(|route| {
             thread::spawn(move || {
                 let mut res = route.clone();
-                let address = route["address"].as_str().unwrap_or("");
+                let (host, http) = split_address(route["address"].as_str().unwrap_or(""));
+                let (port, http_port) = ports.unwrap_or((https_port(http), http));
+                let address = host.as_str();
                 let local = route["kind"] == "local";
                 if local && !is_same_host(address, http_port, route["uniqueid"].as_str().unwrap_or("")) {
                     res["rtt_ms"] = Value::Null;
@@ -345,11 +386,50 @@ mod tests {
         let p = fake_sunshine("AAAA-1111");
         let relay = json!({"id": "relay", "kind": "relay", "label": "Jakarta", "address": "127.0.0.1"});
         let local = |uid: &str| json!({"id": "local", "kind": "local", "label": "Jaringan lokal", "address": "127.0.0.1", "uniqueid": uid});
-        let seen = |routes: Vec<Value>, http: u16| visible(probe_routes_with(&routes, p, http, 2)).iter().map(|r| r["id"].as_str().unwrap().to_string()).collect::<Vec<_>>();
+        let seen = |routes: Vec<Value>, http: u16| visible(probe_routes_with(&routes, Some((p, http)), 2)).iter().map(|r| r["id"].as_str().unwrap().to_string()).collect::<Vec<_>>();
         assert_eq!(seen(vec![relay.clone(), local("aaaa-1111")], p), vec!["relay", "local"]); // uniqueid cocok (huruf besar/kecil bebas)
         assert_eq!(seen(vec![relay.clone(), local("BEDA-2222")], p), vec!["relay"]); // perangkat lain di alamat yang sama
         let dead = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port(); // port tertutup
         assert_eq!(seen(vec![relay, local("AAAA-1111")], dead), vec!["relay"]); // tidak terjangkau = tidak ditampilkan
+    }
+
+    #[test]
+    fn address_may_carry_the_host_base_port() {
+        assert_eq!(split_address("203.0.113.10"), ("203.0.113.10".into(), 47989));
+        assert_eq!(split_address("203.0.113.10:48189"), ("203.0.113.10".into(), 48189));
+        assert_eq!(split_address("pc.example:48189"), ("pc.example".into(), 48189));
+        assert_eq!(split_address("[2001:db8::1]:48189"), ("2001:db8::1".into(), 48189));
+        assert_eq!(split_address("[2001:db8::1]"), ("2001:db8::1".into(), 47989));
+        assert_eq!(split_address("2001:db8::1"), ("2001:db8::1".into(), 47989)); // IPv6 tanpa kurung = tanpa port
+        assert_eq!(split_address("203.0.113.10:abc"), ("203.0.113.10:abc".into(), 47989));
+        assert_eq!((https_port(47989), https_port(48189)), (47984, 48184));
+    }
+
+    /// Dua PC di satu IP relay: tiap jalur diukur ke port PC-nya sendiri, dan jalur Lokal dicek ke port HTTP PC itu.
+    #[test]
+    fn routes_on_one_address_are_probed_on_their_own_ports() {
+        // "HTTPS" = port HTTP - 5: cari sepasang port bebas berjarak 5.
+        let (https, http) = loop {
+            let a = TcpListener::bind("127.0.0.1:0").unwrap();
+            let port = a.local_addr().unwrap().port();
+            if port > 60000 { continue; }
+            if let Ok(b) = TcpListener::bind(("127.0.0.1", port + 5)) {
+                break (a, b);
+            }
+        };
+        let http_port = http.local_addr().unwrap().port();
+        let _keep = https;
+        let dead = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        let routes = vec![
+            json!({"id": "pc2", "kind": "relay", "address": format!("127.0.0.1:{http_port}")}),
+            json!({"id": "mati", "kind": "relay", "address": format!("127.0.0.1:{dead}")}),
+        ];
+        let res = probe_routes(&routes, 2);
+        let rtt = |id: &str| res.iter().find(|r| r["id"] == id).unwrap()["rtt_ms"].clone();
+        assert!(rtt("pc2").is_number());
+        assert!(rtt("mati").is_null());
+        assert!(probe_pair_port(&format!("127.0.0.1:{http_port}"), 1, Duration::from_millis(500), Duration::from_millis(1))["rtt_ms"].is_number());
+        assert!(probe_stream_port(&format!("127.0.0.1:{http_port}"), 1, Duration::from_millis(500), Duration::from_millis(1))["rtt_ms"].is_number());
     }
 
     #[test]

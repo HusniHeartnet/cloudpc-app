@@ -419,7 +419,14 @@ mod tests {
         };
         let http_port = http.local_addr().unwrap().port();
         let _keep = https;
-        let dead = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+        // Port mati: port itu DAN port - 5 (yang ikut diukur) sama-sama bebas. macOS membagi port berurutan, jadi
+        // port - 5 bisa jatuh ke pendengar uji di atas (gagal di CI Mac 26 Nov 2026).
+        let dead = loop {
+            let port = TcpListener::bind("127.0.0.1:0").unwrap().local_addr().unwrap().port();
+            if port > 1029 && TcpListener::bind(("127.0.0.1", port - 5)).is_ok() {
+                break port;
+            }
+        };
         let routes = vec![
             json!({"id": "pc2", "kind": "relay", "address": format!("127.0.0.1:{http_port}")}),
             json!({"id": "mati", "kind": "relay", "address": format!("127.0.0.1:{dead}")}),
